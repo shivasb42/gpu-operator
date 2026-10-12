@@ -1,0 +1,322 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: gpujobs.gpu.operator.io
+spec:
+  group: gpu.operator.io
+  names:
+    kind: GPUJob
+    listKind: GPUJobList
+    plural: gpujobs
+    shortNames:
+      - gj
+    singular: gpujob
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Node
+          type: string
+          jsonPath: .status.assignedNode
+        - name: GPUs
+          type: integer
+          jsonPath: .spec.gpuCount
+        - name: Retries
+          type: integer
+          jsonPath: .status.retryCount
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              required:
+                - image
+                - gpuCount
+              properties:
+                image:
+                  type: string
+                command:
+                  type: array
+                  items:
+                    type: string
+                args:
+                  type: array
+                  items:
+                    type: string
+                gpuCount:
+                  type: integer
+                  minimum: 1
+                  default: 1
+                gpuMemoryMiB:
+                  type: integer
+                schedulingStrategy:
+                  type: string
+                  enum: [BinPack, Spread]
+                  default: BinPack
+                nodeSelector:
+                  type: object
+                  additionalProperties:
+                    type: string
+                affinity:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                tolerations:
+                  type: array
+                  items:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                resources:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                env:
+                  type: array
+                  items:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                retryPolicy:
+                  type: object
+                  properties:
+                    maxRetries:
+                      type: integer
+                      default: 3
+                    backoffBaseSeconds:
+                      type: integer
+                      default: 10
+                    backoffMaxSeconds:
+                      type: integer
+                      default: 300
+                priorityClassName:
+                  type: string
+                idempotencyKey:
+                  type: string
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                assignedNode:
+                  type: string
+                podName:
+                  type: string
+                retryCount:
+                  type: integer
+                lastBackoffUntil:
+                  type: string
+                  format: date-time
+                message:
+                  type: string
+                startTime:
+                  type: string
+                  format: date-time
+                completionTime:
+                  type: string
+                  format: date-time
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: trainingjobs.gpu.operator.io
+spec:
+  group: gpu.operator.io
+  names:
+    kind: TrainingJob
+    listKind: TrainingJobList
+    plural: trainingjobs
+    shortNames:
+      - tj
+    singular: trainingjob
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Master
+          type: integer
+          jsonPath: .status.master.ready
+        - name: Workers
+          type: integer
+          jsonPath: .status.workers.ready
+        - name: Retries
+          type: integer
+          jsonPath: .status.retryCount
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              required:
+                - master
+              properties:
+                master:
+                  type: object
+                  required:
+                    - image
+                  properties:
+                    replicas:
+                      type: integer
+                      minimum: 1
+                      default: 1
+                    gpusPerReplica:
+                      type: integer
+                      minimum: 1
+                      default: 1
+                    image:
+                      type: string
+                    command:
+                      type: array
+                      items:
+                        type: string
+                    args:
+                      type: array
+                      items:
+                        type: string
+                    resources:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    env:
+                      type: array
+                      items:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                workers:
+                  type: object
+                  properties:
+                    replicas:
+                      type: integer
+                      minimum: 1
+                      default: 1
+                    gpusPerReplica:
+                      type: integer
+                      minimum: 1
+                      default: 1
+                    image:
+                      type: string
+                    command:
+                      type: array
+                      items:
+                        type: string
+                    args:
+                      type: array
+                      items:
+                        type: string
+                    resources:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    env:
+                      type: array
+                      items:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                schedulingStrategy:
+                  type: string
+                  enum: [BinPack, Spread]
+                  default: BinPack
+                nodeSelector:
+                  type: object
+                  additionalProperties:
+                    type: string
+                framework:
+                  type: string
+                  default: pytorch
+                retryPolicy:
+                  type: object
+                  properties:
+                    maxRetries:
+                      type: integer
+                      default: 3
+                    backoffBaseSeconds:
+                      type: integer
+                      default: 10
+                    backoffMaxSeconds:
+                      type: integer
+                      default: 300
+                idempotencyKey:
+                  type: string
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                master:
+                  type: object
+                  properties:
+                    desired:
+                      type: integer
+                    ready:
+                      type: integer
+                    failed:
+                      type: integer
+                    pods:
+                      type: array
+                      items:
+                        type: string
+                workers:
+                  type: object
+                  properties:
+                    desired:
+                      type: integer
+                    ready:
+                      type: integer
+                    failed:
+                      type: integer
+                    pods:
+                      type: array
+                      items:
+                        type: string
+                retryCount:
+                  type: integer
+                lastBackoffUntil:
+                  type: string
+                  format: date-time
+                message:
+                  type: string
+                startTime:
+                  type: string
+                  format: date-time
+                completionTime:
+                  type: string
+                  format: date-time
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true

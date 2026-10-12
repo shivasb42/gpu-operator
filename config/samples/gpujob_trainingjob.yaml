@@ -1,0 +1,58 @@
+apiVersion: gpu.operator.io/v1alpha1
+kind: GPUJob
+metadata:
+  name: cuda-vector-add
+  namespace: default
+spec:
+  image: nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda11.7.1-ubuntu20.04
+  gpuCount: 1
+  schedulingStrategy: BinPack
+  idempotencyKey: cuda-vector-add-v1
+  retryPolicy:
+    maxRetries: 3
+    backoffBaseSeconds: 10
+    backoffMaxSeconds: 120
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  env:
+    - name: NVIDIA_DRIVER_CAPABILITIES
+      value: compute,utility
+---
+apiVersion: gpu.operator.io/v1alpha1
+kind: TrainingJob
+metadata:
+  name: pytorch-dist-demo
+  namespace: default
+spec:
+  framework: pytorch
+  schedulingStrategy: BinPack
+  idempotencyKey: pytorch-dist-demo-v1
+  retryPolicy:
+    maxRetries: 2
+    backoffBaseSeconds: 15
+    backoffMaxSeconds: 180
+  master:
+    replicas: 1
+    gpusPerReplica: 1
+    image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+    command: ["python", "-c"]
+    args:
+      - |
+        import os, time
+        print(f"master rank={os.environ.get('RANK')} world={os.environ.get('WORLD_SIZE')}")
+        time.sleep(30)
+  workers:
+    replicas: 2
+    gpusPerReplica: 1
+    image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+    command: ["python", "-c"]
+    args:
+      - |
+        import os, time
+        print(f"worker rank={os.environ.get('RANK')} world={os.environ.get('WORLD_SIZE')}")
+        time.sleep(30)

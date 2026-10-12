@@ -1,0 +1,21 @@
+# Binaries
+/bin/
+/manager
+*.exe
+*.test
+*.out
+cover.out
+.tmp/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Dependencies (keep go.sum)
+vendor/
+
+# Kind / kubeconfig
+kubeconfig
+*.kubeconfig
